@@ -19,9 +19,9 @@ using OrchardCore.Users.ViewModels;
 
 namespace OrchardCore.Users.Controllers
 {
-    internal static class ControllerExtensions
+    public static class ControllerExtensions
     {
-        internal static async Task<bool> SendEmailAsync(this Controller controller, string email, string subject, IShape model)
+        public static async Task<bool> SendEmailAsync(this Controller controller, string email, string subject, IShape model)
         {
             var smtpService = controller.HttpContext.RequestServices.GetRequiredService<ISmtpService>();
             var displayHelper = controller.HttpContext.RequestServices.GetRequiredService<IDisplayHelper>();
@@ -56,7 +56,7 @@ namespace OrchardCore.Users.Controllers
         /// <param name="confirmationEmailSubject"></param>
         /// <param name="logger"></param>
         /// <returns></returns>
-        internal static async Task<IUser> RegisterUser(this Controller controller, RegisterViewModel model, string confirmationEmailSubject, ILogger logger)
+        public static async Task<IUser> RegisterUser(this Controller controller, RegisterViewModel model, string confirmationEmailSubject, ILogger logger)
         {
             var registrationEvents = controller.ControllerContext.HttpContext.RequestServices.GetRequiredService<IEnumerable<IRegistrationFormEvents>>();
             var userService = controller.ControllerContext.HttpContext.RequestServices.GetRequiredService<IUserService>();
@@ -93,7 +93,7 @@ namespace OrchardCore.Users.Controllers
             return null;
         }
 
-        internal static async Task<string> SendEmailConfirmationTokenAsync(this Controller controller, User user, string subject)
+        public static async Task<string> SendEmailConfirmationTokenAsync(this Controller controller, User user, string subject)
         {
             var userManager = controller.ControllerContext.HttpContext.RequestServices.GetRequiredService<UserManager<IUser>>();
             var code = await userManager.GenerateEmailConfirmationTokenAsync(user);
