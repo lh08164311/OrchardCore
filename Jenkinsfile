@@ -1,41 +1,21 @@
 pipeline {
   agent any
-  environment {
-    // CCI_CURRENT_TEAM,当前构建环境的团队名:
-    // CCI_CURRENT_DOMAIN,当前构建环境的域名:coding.net
-    CODING_DOCKER_REG_HOST = "${CCI_CURRENT_TEAM}-docker.pkg.${CCI_CURRENT_DOMAIN}"
-	// PROJECT_NAME,项目地址:
-	// DOCKER_REPO_NAME,当前项目下的 Docker 制品仓库名:
-    CODING_DOCKER_IMAGE_NAME = "${PROJECT_NAME.toLowerCase()}/${DOCKER_REPO_NAME}/${DOCKER_IMAGE_NAME}"
-  }
   stages {
-    stage("检出") {
+    stage('检出') {
       steps {
-        checkout(
-          [$class: 'GitSCM',
-          branches: [[name: GIT_BUILD_REF]],
-          userRemoteConfigs: [[
-            url: GIT_REPO_URL,
-              credentialsId: CREDENTIALS_ID
-            ]]]
-        )
+        checkout([$class: 'GitSCM',
+        branches: [[name: GIT_BUILD_REF]],
+        userRemoteConfigs: [[
+          url: GIT_REPO_URL,
+          credentialsId: CREDENTIALS_ID
+        ]]])
       }
     }
     stage('构建镜像并推送到 CODING Docker 制品库') {
       steps {
-		echo '构建中...'
-		//echo "${CODING_DOCKER_IMAGE_NAME}"
-		//echo "${CODING_DOCKER_REG_HOST}"
-		//echo "docker build -t ${CODING_DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_VERSION} -f ${DOCKERFILE_PATH} ${DOCKER_BUILD_CONTEXT}"
+        echo '构建中...'
         sh "docker build -t ${CODING_DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_VERSION} -f ${DOCKERFILE_PATH} ${DOCKER_BUILD_CONTEXT}"
-        useCustomStepPlugin(
-          key: 'coding-public:artifact_docker_push',
-          version: 'latest',
-          params: [
-            image:"${CODING_DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_VERSION}",
-            repo:"${DOCKER_REPO_NAME}"
-          ]
-        )
+        useCustomStepPlugin(key: 'coding-public:artifact_docker_push', version: 'latest', params: [image:"${CODING_DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_VERSION}",repo:"${DOCKER_REPO_NAME}"])
       }
     }
     stage('部署到远端服务') {
@@ -69,10 +49,10 @@ pipeline {
               command: "docker login -u ${CODING_DOCKER_REG_USERNAME} -p ${CODING_DOCKER_REG_PASSWORD} ${CODING_DOCKER_REG_HOST}",
               sudo: true,
             )
-            
+
             // 删除历史镜像
             //sshScript(remote: remoteConfig, script: 'deloldimages.sh')
-            
+
             // 删除容器
             sshCommand(
               remote: remoteConfig,
@@ -96,7 +76,12 @@ pipeline {
             echo "部署成功，请到 http://${REMOTE_HOST}:4000 预览效果"
           }
         }
+
       }
     }
+  }
+  environment {
+    CODING_DOCKER_REG_HOST = "${CCI_CURRENT_TEAM}-docker.pkg.${CCI_CURRENT_DOMAIN}"
+    CODING_DOCKER_IMAGE_NAME = "${PROJECT_NAME.toLowerCase()}/${DOCKER_REPO_NAME}/${DOCKER_IMAGE_NAME}"
   }
 }
